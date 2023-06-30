@@ -2,10 +2,16 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/shipyard-run/hclconfig"
 	"github.com/shipyard-run/hclconfig/types"
+)
+
+var (
+	nomadEnvPrefix    = "NOMAD_"
+	boundaryEnvPrefix = "BOUNDARY_"
 )
 
 // Config defines a struct that holds the config for the controller
@@ -14,21 +20,6 @@ type Config struct {
 
 	Nomad    *Nomad    `hcl:"nomad,block"`
 	Boundary *Boundary `hcl:"boundary,block"`
-}
-
-// Process is called by hclconfig when it finds a Config resource
-// you can do validation and cleanup here
-func (c *Config) Process() error {
-	c.Boundary.DefaultIngressFilter = strings.TrimSpace(c.Boundary.DefaultIngressFilter)
-	c.Boundary.DefaultEgressFilter = strings.TrimSpace(c.Boundary.DefaultEgressFilter)
-
-	if ! c.Boundary.Enterprise {
-	if c.Boundary.DefaultIngressFilter!= "" {
-		return fmt.Errorf("ingress filters are not supported on oss boundary")
-	}
-}
-
-	return nil
 }
 
 // Nomad is configuration specific to the Nomad scheduler
@@ -55,6 +46,24 @@ type Boundary struct {
 	DefaultEgressFilter  string `hcl:"default_egress_filter,optional"`
 }
 
+// Process is called by hclconfig when it finds a Config resource
+// you can do validation and cleanup here
+func (c *Config) Process() error {
+	c.Boundary.DefaultIngressFilter = strings.TrimSpace(c.Boundary.DefaultIngressFilter)
+	c.Boundary.DefaultEgressFilter = strings.TrimSpace(c.Boundary.DefaultEgressFilter)
+
+	// check for ENV VARS
+	c.checkEnvVars()
+
+	if !c.Boundary.Enterprise {
+		if c.Boundary.DefaultIngressFilter != "" || c.Boundary.DefaultEgressFilter != "" {
+			return fmt.Errorf("ingress filters are not supported by oss boundary")
+		}
+	}
+
+	return nil
+}
+
 // Parse the given HCL config file and return the Config
 func Parse(config string) (*Config, error) {
 	p := hclconfig.NewParser(hclconfig.DefaultOptions())
@@ -79,4 +88,61 @@ func Parse(config string) (*Config, error) {
 	}
 
 	return r[0].(*Config), nil
+}
+
+// checkEnvVars will check for existing env vars and override
+// the config values for those env vars
+func (c *Config) checkEnvVars() {
+
+	n := nomadEnvPrefix
+	b := boundaryEnvPrefix
+
+	if x := os.Getenv(n + "ADDRESS"); x != "" {
+		c.Nomad.Address = x
+	}
+	if x := os.Getenv(n + "TOKEN"); x != "" {
+		c.Nomad.Token = x
+	}
+	if x := os.Getenv(n + "REGION"); x != "" {
+		c.Nomad.Region = x
+	}
+	if x := os.Getenv(n + "NAMESPACE"); x != "" {
+		c.Nomad.Namespace = x
+	}
+	switch x := os.Getenv(b + "ENTERPRISE"); x {
+	case "":
+		break
+	case "true":
+		c.Boundary.Enterprise = true
+	case "false":
+		c.Boundary.Enterprise = false
+	}
+	if x := os.Getenv(b + "ORG_ID"); x != "" {
+		c.Boundary.OrgID = x
+	}
+	if x := os.Getenv(b + "DEFAULT_PROJECT"); x != "" {
+		c.Boundary.DefaultProject = x
+	}
+	if x := os.Getenv(b + "DEFAULT_GROUPS"); x != "" {
+		dp := strings.Split(x, ",")
+		c.Boundary.DefaultGroups = dp
+	}
+	if x := os.Getenv(b + "AUTH_METHOD_ID"); x != "" {
+		c.Boundary.AuthMethodID = x
+	}
+	if x := os.Getenv(b + "USERNAME"); x != "" {
+		c.Boundary.Username = x
+	}
+	if x := os.Getenv(b + "PASSWORD"); x != "" {
+		c.Boundary.Password = x
+	}
+	if x := os.Getenv(b + "ADDRESS"); x != "" {
+		c.Boundary.Address = x
+	}
+	if x := os.Getenv(b + "DEFAULT_INGRESS_FILTER"); x != "" {
+		c.Boundary.DefaultIngressFilter = x
+	}
+	if x := os.Getenv(b + "DEFAULT_EGRESS_FILTER"); x != "" {
+		c.Boundary.DefaultEgressFilter = x
+	}
 }

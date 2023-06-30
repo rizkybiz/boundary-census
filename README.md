@@ -27,6 +27,25 @@ config "controller" {
 }
 ```
 
+Environment variables can also be used to configure Boundary Census
+
+|             ENV_VAR             | Description                                                                          |
+|:-------------------------------:|--------------------------------------------------------------------------------------|
+| NOMAD_ADDRESS                   | Address for Nomad server                                                             |
+| NOMAD_TOKEN                     | Token for accessing Nomad (optional)                                                 |
+| NOMAD_REGION                    | Nomad region (optional)                                                              |
+| NOMAD_NAMESPACE                 | Nomad namespace (optional)                                                           |
+| BOUNDARY_ENTERPRISE             | Boolean for Boundary enterprise (optional)                                           |
+| BOUNDARY_ORG_ID                 | Boundary org ID                                                                      |
+| BOUNDARY_DEFAULT_PROJECT        | The default Boundary project to place Nomad targets                                  |
+| BOUNDARY_DEFAULT_GROUPS         | UNIMPLEMENTED                                                                        |
+| BOUNDARY_AUTH_METHOD_ID         | ID of the Boundary auth method for the following username and password               |
+| BOUNDARY_USERNAME               | Username of the Boundary Admin                                                       |
+| BOUNDARY_PASSWORD               | Password of the Boundary Admin                                                       |
+| BOUNDARY_ADDRESS                | Address of the Boundary control plane                                                |
+| BOUNDARY_DEFAULT_INGRESS_FILTER | Ingress filter to apply when creating targets in boundary from Nomad Jobs (optional) |
+| BOUNDARY_DEFAULT_EGRESS_FILTER  | Egress filter to apply when creating targets in boundary from Nomad Jobs (optional)  |
+
 ## Mocks
 
 To re-generate the mock used for testing run the following command:
